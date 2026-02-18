@@ -2,6 +2,8 @@
 
 API and web app for planning driving routes in the USA with cost-effective fuel stop suggestions (500 mi range, 10 MPG). Uses OpenRouteService for routing and a provided fuel-price dataset.
 
+**Live demo:** [http://usa-fuel-optimizer.aliznet.ir:9090/](http://usa-fuel-optimizer.aliznet.ir:9090/)
+
 ## Local development
 
 ```bash
