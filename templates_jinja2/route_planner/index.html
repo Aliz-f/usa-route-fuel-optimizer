@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Route & Fuel Optimizer{% endblock %} | USA</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --danger: #f85149;
+      --radius: 10px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      flex-shrink: 0;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0.25rem 0 0;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    main {
+      flex: 1;
+      padding: 1.25rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      align-items: end;
+    }
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    input[type="text"]::placeholder {
+      color: var(--muted);
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+    }
+    button[type="submit"] {
+      padding: 0.7rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button[type="submit"]:hover {
+      background: var(--accent-hover);
+    }
+    button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #map {
+      height: 360px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    @media (min-width: 768px) {
+      #map {
+        height: 420px;
+      }
+    }
+    .map-card {
+      margin-bottom: 1.25rem;
+    }
+    .results-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .results-summary .stat {
+      background: var(--bg);
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .results-summary .stat .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .results-summary .stat .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .fuel-stops-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .fuel-stops-list li {
+      padding: 0.85rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .fuel-stops-list li:last-child {
+      border-bottom: none;
+    }
+    .fuel-stops-list .stop-num {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .fuel-stops-list .stop-info .name {
+      font-weight: 600;
+    }
+    .fuel-stops-list .stop-info .addr {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .fuel-stops-list .stop-price {
+      font-weight: 700;
+      color: var(--success);
+    }
+    .error-msg {
+      background: rgba(248, 81, 73, 0.15);
+      border: 1px solid var(--danger);
+      color: #f85149;
+      padding: 0.85rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <h1>Route & Fuel Optimizer</h1>
+      <p>Enter start and end locations in the USA. Get the route and cost-effective fuel stops (500 mi range, 10 MPG).</p>
+    </header>
+    <main>
+      <div class="card">
+        <form id="route-form" action="#" method="post">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <div class="form-row">
+            <div>
+              <label for="start">Start location</label>
+              <input type="text" id="start" name="start" placeholder="e.g. Chicago, IL" required>
+            </div>
+            <div>
+              <label for="end">End location</label>
+              <input type="text" id="end" name="end" placeholder="e.g. Los Angeles, CA" required>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button type="submit" id="submit-btn">Plan route</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="error-box" class="error-msg hidden" role="alert"></div>
+
+      <div id="map-card" class="card map-card hidden">
+        <h2 style="margin: 0 0 0.75rem; font-size: 1.1rem;">Route map</h2>
+        <div id="map"></div>
+      </div>
+
+      <div id="results-card" class="card hidden">
+        <h2 style="margin: 0 0 1rem; font-size: 1.1rem;">Summary</h2>
+        <div id="results-summary" class="results-summary"></div>
+        <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem;">Fuel stops</h3>
+        <ul id="fuel-stops-list" class="fuel-stops-list"></ul>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    (function() {
+      const form = document.getElementById('route-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const errorBox = document.getElementById('error-box');
+      const mapCard = document.getElementById('map-card');
+      const resultsCard = document.getElementById('results-card');
+      const resultsSummary = document.getElementById('results-summary');
+      const fuelStopsList = document.getElementById('fuel-stops-list');
+
+      const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+      const getCsrf = () => csrfInput ? csrfInput.value : '';
+
+      let map = null;
+      let routeLayer = null;
+      let markersLayer = null;
+
+      function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+      }
+      function hideError() {
+        errorBox.classList.add('hidden');
+      }
+      function setLoading(loading) {
+        form.classList.toggle('loading', loading);
+        submitBtn.disabled = loading;
+      }
+
+      function initMap() {
+        if (map) return;
+        map = L.map('map').setView([39.5, -98.35], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19
+        }).addTo(map);
+      }
+
+      function clearMap() {
+        if (routeLayer) {
+          map.removeLayer(routeLayer);
+          routeLayer = null;
+        }
+        if (markersLayer) {
+          map.removeLayer(markersLayer);
+          markersLayer = null;
+        }
+      }
+
+      function drawResult(data) {
+        initMap();
+        clearMap();
+
+        const waypoints = data.route.waypoints || [];
+        const start = data.route.start;
+        const end = data.route.end;
+        const stops = (data.fuel_optimization && data.fuel_optimization.fuel_stops) || [];
+
+        const latlngs = waypoints.length
+          ? waypoints.map(function(w) { return [w.lat, w.lon]; })
+          : [[start.lat, start.lon], [end.lat, end.lon]];
+
+        routeLayer = L.polyline(latlngs, { color: '#58a6ff', weight: 4, opacity: 0.8 }).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+
+        const markers = [];
+        markers.push(L.marker([start.lat, start.lon]).bindPopup('<b>Start</b><br>' + start.location));
+        markers.push(L.marker([end.lat, end.lon]).bindPopup('<b>End</b><br>' + end.location));
+        stops.forEach(function(s, i) {
+          markers.push(L.marker([s.lat, s.lon]).bindPopup(
+            '<b>Stop ' + (i + 1) + '</b><br>' + s.name + '<br>' + s.city + ', ' + s.state + '<br>$' + s.retail_price_per_gallon + '/gal'
+          ));
+        });
+        markersLayer = L.layerGroup(markers).addTo(map);
+      }
+
+      function renderSummary(summary) {
+        if (!summary) return;
+        resultsSummary.innerHTML = [
+          { value: summary.total_distance_miles, label: 'Distance (mi)' },
+          { value: summary.total_fuel_stops, label: 'Fuel stops' },
+          { value: summary.total_gallons_needed, label: 'Gallons' },
+          { value: '$' + summary.average_price_per_gallon, label: 'Avg $/gal' },
+          { value: '$' + summary.total_fuel_cost_usd, label: 'Total fuel cost' }
+        ].map(function(s) {
+          return '<div class="stat"><span class="value">' + s.value + '</span><span class="label">' + s.label + '</span></div>';
+        }).join('');
+      }
+
+      function renderFuelStops(stops) {
+        fuelStopsList.innerHTML = (stops || []).map(function(s, i) {
+          return '<li><span class="stop-num">' + (i + 1) + '</span>' +
+            '<div class="stop-info"><span class="name">' + (s.name || '—') + '</span><br><span class="addr">' +
+            (s.address || '') + ', ' + (s.city || '') + ', ' + (s.state || '') + ' · ' + (s.miles_from_start || 0) + ' mi</span></div>' +
+            '<span class="stop-price">$' + (s.retail_price_per_gallon != null ? s.retail_price_per_gallon.toFixed(2) : '—') + '/gal</span></li>';
+        }).join('');
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        hideError();
+        const start = document.getElementById('start').value.trim();
+        const end = document.getElementById('end').value.trim();
+        if (!start || !end) {
+          showError('Please enter both start and end locations.');
+          return;
+        }
+
+        setLoading(true);
+        fetch('/api/route/optimize/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrf()
+          },
+          body: JSON.stringify({ start: start, end: end })
+        })
+          .then(function(res) {
+            return res.text().then(function(text) {
+              var data;
+              try { data = text ? JSON.parse(text) : {}; } catch (_) { data = {}; }
+              if (!res.ok) {
+                var msg = (data && data.error) || res.statusText || 'Request failed';
+                throw new Error(msg);
+              }
+              return data;
+            });
+          })
+          .then(function(data) {
+            mapCard.classList.remove('hidden');
+            resultsCard.classList.remove('hidden');
+            drawResult(data);
+            renderSummary(data.fuel_optimization && data.fuel_optimization.summary);
+            renderFuelStops(data.fuel_optimization && data.fuel_optimization.fuel_stops);
+          })
+          .catch(function(err) {
+            showError(err.message || 'Something went wrong. Try again.');
+          })
+          .finally(function() {
+            setLoading(false);
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
