@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import render
 from rest_framework.response import Response
@@ -19,19 +20,23 @@ def home(request):
 
 
 def health(request):
-    """Health check for load balancers and Docker. Returns 200 if app and cache are OK."""
-    status_code = status.HTTP_200_OK
-    payload = {"status": "ok", "cache": "unknown"}
-    if getattr(settings, "REDIS_URL", None):
-        try:
-            cache.set("health_check", 1, 10)
-            cache.get("health_check")
-            payload["cache"] = "ok"
-        except Exception as e:
-            payload["cache"] = "error"
-            payload["cache_error"] = str(e)
-            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    return Response(payload, status=status_code)
+    """Health check for load balancers and Docker. Returns 200 if app is up; 503 if cache is down."""
+    try:
+        payload = {"status": "ok", "cache": "unknown"}
+        status_code = 200
+        redis_url = getattr(settings, "REDIS_URL", None)
+        if redis_url and str(redis_url).strip():
+            try:
+                cache.set("health_check", 1, 10)
+                cache.get("health_check")
+                payload["cache"] = "ok"
+            except Exception as e:
+                payload["cache"] = "error"
+                payload["cache_error"] = str(e)[:200]
+                status_code = 503
+        return JsonResponse(payload, status=status_code)
+    except Exception:
+        return JsonResponse({"status": "error", "message": "health check failed"}, status=500)
 
 
 class RouteOptimizerView(APIView):

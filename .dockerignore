@@ -1,7 +1,7 @@
 # Git and env
 .git
 .gitignore
-.env
+
 .env.*
 !.env.example
 
