@@ -1,0 +1,34 @@
+# Git and env
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Python
+.venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# IDE and OS
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Docs and dev
+README.md
+*.md
+!pyproject.toml
+
+# data/ is included so fuel_prices.csv (and optional fuel_geocoded.json) are in the image
